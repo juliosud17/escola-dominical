@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Escola Dominical</title>
+<meta name="theme-color" content="#1f4e5f">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Escola Dominical">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+:root{--bg:#f6f2ea;--card:#fff;--ink:#22303a;--muted:#6b7780;--pri:#1f4e5f;--gold:#c9a24a;--line:#e4ddd0;--ok:#2f7d4f}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:17px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent;padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+header{background:var(--pri);color:#fff;padding:calc(18px + env(safe-area-inset-top)) 18px 0;position:sticky;top:0;z-index:5}
+h1{font:600 22px/1.2 Georgia,serif;margin:0 0 2px}
+.sub{opacity:.8;font-size:14px;margin:0 0 14px}
+.tabs{display:flex;gap:4px}
+.tab{flex:1;border:0;background:transparent;color:#fff;opacity:.7;padding:12px 4px;font:600 16px inherit;font-family:inherit;border-bottom:3px solid transparent}
+.tab.on{opacity:1;border-color:var(--gold)}
+main{padding:16px;max-width:640px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.card h2{font-size:17px;margin:0 0 10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.badge{font-size:12px;font-weight:600;padding:3px 8px;border-radius:20px;background:#f1ece2;color:var(--muted);white-space:nowrap}
+.badge.full{background:#e3f1e8;color:var(--ok)}
+label{display:block;font-size:13px;color:var(--muted);margin:8px 0 4px}
+input{width:100%;font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fcfbf8;color:var(--ink)}
+input:focus{outline:2px solid var(--gold);border-color:transparent;background:#fff}
+.del{border:0;background:none;color:#b0453a;font-size:13px;padding:4px}
+.add{width:100%;padding:13px;border:2px dashed var(--line);border-radius:14px;background:none;font:600 16px inherit;font-family:inherit;color:var(--pri)}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));display:flex;gap:10px;align-items:center;z-index:5}
+.bar .info{flex:1;font-size:13px;color:var(--muted)}
+.btn{border:0;border-radius:12px;padding:12px 16px;font:600 16px inherit;font-family:inherit;background:var(--pri);color:#fff}
+.btn.sec{background:#efe9dd;color:var(--pri)}
+.hide{display:none}
+.toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;transition:.25s;pointer-events:none}
+.toast.show{opacity:1}
+.row{display:flex;gap:10px}.row>div{flex:1;min-width:0}
+.hora{font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--gold);margin:18px 4px 8px}
+.line{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}.line:first-child{border-top:0}.line span{flex:0 0 40%;font-weight:600;font-size:15px}.line input{flex:1;min-width:0}
+select{width:100%;font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fcfbf8;color:var(--ink);-webkit-appearance:none}
+.tip{font-size:14px;color:var(--muted);text-align:center;margin:18px 0 6px}
+@media print{header,.bar,.add,.del,.tip{display:none!important}body{background:#fff;padding:0}.card{break-inside:avoid}.sec-print{display:block!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Escola Dominical</h1>
+  <p class="sub">Classes, presidências e treinamento mensal</p>
+  <div class="tabs">
+    <button class="tab on" data-t="classes">Classes</button>
+    <button class="tab" data-t="pres">Presidências</button>
+    <button class="tab" data-t="trein">Treinamento</button>
+  </div>
+</header>
+
+<main>
+  <section id="classes"></section>
+  <section id="pres" class="hide"></section>
+  <section id="trein" class="hide"></section>
+  <p class="tip">Tudo é salvo automaticamente no celular.</p>
+</main>
+
+<div class="bar">
+  <div class="info" id="upd">Ainda sem atualização</div>
+  <button class="btn sec" id="print">Imprimir</button>
+  <button class="btn" id="share">Enviar</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY='ed-classes-v1';
+const DEF={
+  classes:["Doutrina do Evangelho","Alicerces do Evangelho","Jovens","Quórum de Élderes","Sociedade de Socorro","Moças","Rapazes","Primária - Valorosos","Primária - CTR","Primária - Berçário","Seminário"].map(n=>({n,p1:"",p2:""})),
+  pres:["Sociedade de Socorro","Quórum de Élderes","Moças","Rapazes","Primária"].map(n=>({n,pr:"",c1:"",c2:"",sec:""})),
+  upd:null,
+  trein:{}
+};
+const H1=["Sociedade de Socorro","Quórum de Élderes","Rapazes","Moças","Primária"];
+const H2=["Domínio do Evangelho","Alicerces do Evangelho","Jovens","Primária"];
+const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+let TAB='classes';
+const CF=[["p1","Professor(a) 1"],["p2","Professor(a) 2"]];
+const PF=[["pr","Presidente"],["c1","1º Conselheiro(a)"],["c2","2º Conselheiro(a)"],["sec","Secretário(a)"]];
+let S;
+try{S=JSON.parse(localStorage.getItem(KEY))||structuredClone(DEF)}catch(e){S=structuredClone(DEF)}
+S.trein=S.trein||{};
+let MES=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')})();
+function T(){return S.trein[MES]||(S.trein[MES]={data:'',h1:H1.map(()=>''),h2:H2.map(()=>'')})}
+function mesNome(m){const[a,b]=m.split('-');return MESES[b-1]+' de '+a}
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function save(){S.upd=new Date().toISOString();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}showUpd()}
+function showUpd(){$('#upd').textContent=S.upd?'Atualizado em '+new Date(S.upd).toLocaleDateString('pt-BR'):'Ainda sem atualização'}
+function badge(o,f){const c=f.filter(([k])=>o[k].trim()).length;return `<span class="badge ${c==f.length?'full':''}">${c}/${f.length}</span>`}
+
+function card(list,i,f,type){
+  const o=list[i];
+  return `<div class="card" data-type="${type}" data-i="${i}">
+    <h2><span>${esc(o.n)}</span>${badge(o,f)}</h2>
+    ${f.map(([k,l])=>`<label>${l}</label><input data-k="${k}" value="${esc(o[k])}" placeholder="Nome" autocomplete="off" autocapitalize="words">`).join('')}
+    ${o.custom?'<button class="del">Remover</button>':''}
+  </div>`}
+function render(){
+  $('#classes').innerHTML=S.classes.map((_,i)=>card(S.classes,i,CF,'classes')).join('')+'<button class="add" data-add="classes">+ Adicionar classe</button>';
+  renderTrein();
+  $('#pres').innerHTML=S.pres.map((_,i)=>card(S.pres,i,PF,'pres')).join('')+'<button class="add" data-add="pres">+ Adicionar organização</button>';
+}
+function nomes(){const n=new Set();S.classes.forEach(o=>CF.forEach(([k])=>o[k].trim()&&n.add(o[k].trim())));S.pres.forEach(o=>PF.forEach(([k])=>o[k].trim()&&n.add(o[k].trim())));return[...n].sort()}
+function renderTrein(){
+  const t=T();const ms=new Set(Object.keys(S.trein));ms.add(MES);
+  const now=new Date();for(let i=-1;i<=3;i++){const d=new Date(now.getFullYear(),now.getMonth()+i,1);ms.add(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'))}
+  const opts=[...ms].sort().map(m=>`<option value="${m}" ${m==MES?'selected':''}>${MESES[m.split('-')[1]-1].slice(0,3)}/${m.split('-')[0]}</option>`).join('');
+  const lin=(arr,h)=>arr.map((n,i)=>`<div class="line"><span>${esc(n)}</span><input data-h="${h}" data-i="${i}" value="${esc(t[h][i])}" placeholder="Responsável" list="nomes" autocomplete="off" autocapitalize="words"></div>`).join('');
+  $('#trein').innerHTML=`<div class="card"><div class="row"><div><label style="margin-top:0">Mês</label><select id="mes">${opts}</select></div><div><label style="margin-top:0">Data</label><input type="date" id="tdata" value="${esc(t.data)}"></div></div></div>
+  <div class="hora">1º HORÁRIO</div><div class="card">${lin(H1,'h1')}</div>
+  <div class="hora">2º HORÁRIO</div><div class="card">${lin(H2,'h2')}</div>
+  <datalist id="nomes">${nomes().map(n=>`<option value="${esc(n)}">`).join('')}</datalist>`;
+}
+document.addEventListener('change',e=>{if(e.target.id=='mes'){MES=e.target.value;renderTrein()}});
+document.addEventListener('input',e=>{
+  const inp=e.target;
+  if(inp.id=='tdata'){T().data=inp.value;save();return}
+  if(inp.dataset.h){T()[inp.dataset.h][inp.dataset.i]=inp.value;save();return}
+  const c=inp.closest('.card');if(!c||!c.dataset.type)return;
+  const o=S[c.dataset.type][c.dataset.i];o[inp.dataset.k]=inp.value;save();
+  c.querySelector('.badge').outerHTML=badge(o,c.dataset.type=='classes'?CF:PF);
+});
+document.addEventListener('click',e=>{
+  const t=e.target;
+  if(t.classList.contains('tab')){TAB=t.dataset.t;document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b==t));['classes','pres','trein'].forEach(id=>$('#'+id).classList.toggle('hide',id!=TAB));if(TAB=='trein')renderTrein();scrollTo(0,0)}
+  if(t.dataset.add){const n=prompt('Nome da '+(t.dataset.add=='classes'?'classe':'organização')+':');if(n&&n.trim()){const o={n:n.trim(),custom:true};(t.dataset.add=='classes'?CF:PF).forEach(([k])=>o[k]='');S[t.dataset.add].push(o);save();render()}}
+  if(t.classList.contains('del')){const c=t.closest('.card');if(confirm('Remover "'+S[c.dataset.type][c.dataset.i].n+'"?')){S[c.dataset.type].splice(c.dataset.i,1);save();render()}}
+});
+function texto(){
+  const v=x=>x.trim()||'—';
+  let s='*CLASSES E PRESIDÊNCIAS*\n\n*CLASSES / PROFESSORES*\n';
+  S.classes.forEach(o=>s+=`\n▪️ *${o.n}*\n   ${v(o.p1)}${o.p2.trim()?' / '+o.p2.trim():''}\n`);
+  s+='\n*PRESIDÊNCIAS DAS ORGANIZAÇÕES*\n';
+  S.pres.forEach(o=>s+=`\n▪️ *${o.n}*\n   Presidente: ${v(o.pr)}\n   1º Cons.: ${v(o.c1)}\n   2º Cons.: ${v(o.c2)}\n   Secretário(a): ${v(o.sec)}\n`);
+  if(S.upd)s+=`\nAtualizado em ${new Date(S.upd).toLocaleDateString('pt-BR')}`;
+  return s}
+function textoTrein(){
+  const t=T(),v=x=>x.trim()||'—';
+  let s=`*TREINAMENTO MENSAL*\nEscola Dominical\n\n*Mês:* ${mesNome(MES)}`;
+  if(t.data){const[a,b,c]=t.data.split('-');s+=`\n*Data:* ${c}/${b}/${a}`}
+  s+='\n\n*1º HORÁRIO*\n';H1.forEach((n,i)=>s+=`▪️ ${n}: ${v(t.h1[i])}\n`);
+  s+='\n*2º HORÁRIO*\n';H2.forEach((n,i)=>s+=`▪️ ${n}: ${v(t.h2[i])}\n`);
+  return s}
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000)}
+$('#share').onclick=async()=>{
+  const txt=TAB=='trein'?textoTrein():texto();
+  if(navigator.share){try{await navigator.share({text:txt})}catch(e){}}
+  else{try{await navigator.clipboard.writeText(txt);toast('Copiado! Cole no WhatsApp')}catch(e){location.href='https://wa.me/?text='+encodeURIComponent(txt)}}
+};
+$('#print').onclick=()=>{
+  document.querySelectorAll('section').forEach(s=>(TAB=='trein'?s.id=='trein':s.id!='trein')&&s.classList.add('sec-print'));
+  print();
+  document.querySelectorAll('section').forEach(s=>s.classList.remove('sec-print'));
+};
+render();showUpd();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>
